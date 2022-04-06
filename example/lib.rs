@@ -39,6 +39,40 @@ mod example {
         ips_id: CommonId,
     }
 
+    #[ink(event)]
+    pub struct RemovedFromIps {
+        #[ink(topic)]
+        ips_id: CommonId,
+    }
+
+    #[ink(event)]
+    pub struct IpsAllowedReplica {
+        #[ink(topic)]
+        ips_id: CommonId,
+    }
+
+    #[ink(event)]
+    pub struct IpsDisallowedReplica {
+        #[ink(topic)]
+        ips_id: CommonId,
+    }
+
+    #[ink(event)]
+    pub struct IpsReplicaCreated {
+        #[ink(topic)]
+        original: CommonId,
+        #[ink(topic)]
+        new: CommonId,
+    }
+
+    #[ink(event)]
+    pub struct IptMinted {
+        #[ink(topic)]
+        target: ink_env::AccountId,
+        #[ink(topic)]
+        amount: u128,
+    }
+
     impl Extension {
         #[ink(constructor)]
         pub fn new() -> Self {
@@ -105,6 +139,61 @@ mod example {
                 .ips_append(ips_id, assets, new_metadata)?;
 
             self.env().emit_event(AppendedToIps { ips_id });
+            Ok(())
+        }
+
+        #[ink(message)]
+        pub fn remove_from_ips(
+            &mut self,
+            ips_id: CommonId,
+            assets: Vec<(AnyId<CommonId, CommonId>, ink_env::AccountId)>,
+            new_metadata: Option<Vec<u8>>,
+        ) -> Result<(), ExtensionError> {
+            self.env()
+                .extension()
+                .ips_remove(ips_id, assets, new_metadata)?;
+
+            self.env().emit_event(RemovedFromIps { ips_id });
+            Ok(())
+        }
+
+        #[ink(message)]
+        pub fn allow_replica(&mut self, ips_id: CommonId) -> Result<(), ExtensionError> {
+            self.env().extension().ips_allow_replica(ips_id)?;
+
+            self.env().emit_event(IpsAllowedReplica { ips_id });
+            Ok(())
+        }
+
+        #[ink(message)]
+        pub fn disallow_replica(&mut self, ips_id: CommonId) -> Result<(), ExtensionError> {
+            self.env().extension().ips_disallow_replica(ips_id)?;
+
+            self.env().emit_event(IpsDisallowedReplica { ips_id });
+            Ok(())
+        }
+
+        #[ink(message)]
+        pub fn create_replica(&mut self, ips_id: CommonId) -> Result<(), ExtensionError> {
+            let new = self.env().extension().ips_create_replica(ips_id)?;
+
+            self.env().emit_event(IpsReplicaCreated {
+                original: ips_id,
+                new,
+            });
+            Ok(())
+        }
+
+        #[ink(message)]
+        pub fn mint_ipt(
+            &mut self,
+            target: ink_env::AccountId,
+            ipt_id: CommonId,
+            amount: u128,
+        ) -> Result<(), ExtensionError> {
+            self.env().extension().ipt_mint(target, ipt_id, amount)?;
+
+            self.env().emit_event(IptMinted { target, amount });
             Ok(())
         }
 
